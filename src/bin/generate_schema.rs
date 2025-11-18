@@ -1,7 +1,6 @@
 use crawler_schema::RuleFile;
 use schemars::schema_for;
 use serde_json::Value;
-use std::{fs, path::Path};
 
 // Get version from Cargo.toml at compile time
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -21,20 +20,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    // Output path
-    let output_path = "../ying-ju-crawler-docs/docs/schema/schema.json";
-
-    // Create parent directory if needed
-    if let Some(parent) = Path::new(output_path).parent() {
-        fs::create_dir_all(parent)?;
-    }
-
-    // Write schema to file
+    // Output schema to stdout
     let json_string = serde_json::to_string_pretty(&schema_value)?;
-    fs::write(output_path, json_string)?;
-
-    println!("✓ JSON Schema generated successfully at: {}", output_path);
-    println!("  Schema version: {}", VERSION);
+    println!("{}", json_string);
 
     Ok(())
 }

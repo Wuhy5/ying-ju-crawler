@@ -1,0 +1,46 @@
+name: Update Docs Schema
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout schema repo
+        uses: actions/checkout@v4
+        with:
+          path: schema-repo
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Generate schema
+        run: cd schema-repo && cargo run --bin generate_schema > schema.json
+
+      - name: Checkout docs repo
+        uses: actions/checkout@v4
+        with:
+          repository: Wuhy5/ying-ju-crawler-docs
+          path: docs-repo
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update schema.json
+        run: cp schema-repo/schema.json docs-repo/docs/schema/schema.json
+
+      - name: Commit and push if changed
+        run: |
+          cd docs-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/schema/schema.json
+          if test (git diff --staged --quiet)
+          echo "No changes to commit"
+          else
+          git commit -m "feat: 更新 schema.json 来自 ying-ju-crawler-schema"
+          git push
+          end
+          # fish shell syntax used
+          # 'test (git diff --staged --quiet)' returns true if no changes
