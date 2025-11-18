@@ -25,7 +25,7 @@ jobs:
         with:
           repository: Wuhy5/ying-ju-crawler-docs
           path: docs-repo
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}
 
       - name: Update schema.json
         run: cp schema-repo/schema.json docs-repo/docs/schema/schema.json
