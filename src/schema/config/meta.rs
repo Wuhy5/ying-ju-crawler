@@ -1,6 +1,6 @@
 //! 元数据 (Meta)
 
-use crate::MediaType;
+use crate::schema::types::MediaType;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

@@ -5,9 +5,10 @@
 //! - ItemDetail: 详情页完整数据模型
 //! - MediaContent: 媒体特定内容结构（视频、音频、书籍、漫画）
 
-use super::MediaType;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use crate::types::MediaType;
 
 /// 列表项摘要 (ItemSummary)
 /// 用于列表页渲染的标准化数据结构，包含最少的必需字段。

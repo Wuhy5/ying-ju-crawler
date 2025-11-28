@@ -1,6 +1,6 @@
 //! 脚本配置 (ScriptingConfig)
 
-use crate::{Identifier, ScriptEngine};
+use crate::schema::types::{Identifier, ScriptEngine};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
