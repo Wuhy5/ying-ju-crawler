@@ -2,10 +2,7 @@
 //!
 //! 提供便捷的请求构建接口
 
-use crate::context::Context;
-use crate::http::HttpClient;
-use crate::template::TemplateRenderer;
-use crate::Result;
+use crate::{Result, context::Context, http::HttpClient, template::TemplateRenderer};
 use crawler_schema::{HttpMethod, RequestConfig, Template};
 
 /// 请求构建器

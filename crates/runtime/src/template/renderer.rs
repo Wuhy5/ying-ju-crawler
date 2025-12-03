@@ -2,9 +2,7 @@
 //!
 //! 为 schema::Template 提供渲染能力
 
-use crate::context::Context;
-use crate::template::TemplateEngine;
-use crate::Result;
+use crate::{Result, context::Context, template::TemplateEngine};
 use crawler_schema::Template;
 
 /// 模板渲染器 trait

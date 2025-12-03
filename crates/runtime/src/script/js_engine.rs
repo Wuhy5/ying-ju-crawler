@@ -14,8 +14,7 @@
 // 4. JSON <-> Boa JsValue 转换
 // 5. 将 ScriptContext 映射到 JS 全局对象
 
-use super::engine::ScriptEngine;
-use super::context::ScriptContext;
+use super::{context::ScriptContext, engine::ScriptEngine};
 use crate::Result;
 use std::time::Duration;
 

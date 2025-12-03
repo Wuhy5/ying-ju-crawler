@@ -1,9 +1,11 @@
 //! # 变量执行器
 
-use crate::context::Context;
-use crate::error::RuntimeError;
-use crate::extractor::{ExtractValue, StepExecutor};
-use crate::Result;
+use crate::{
+    Result,
+    context::Context,
+    error::RuntimeError,
+    extractor::{ExtractValue, StepExecutor},
+};
 
 /// 变量执行器
 pub struct VarExecutor {

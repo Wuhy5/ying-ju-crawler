@@ -2,8 +2,7 @@
 //!
 //! 封装 reqwest，提供连接池和重试机制
 
-use crate::error::RuntimeError;
-use crate::Result;
+use crate::{Result, error::RuntimeError};
 use crawler_schema::HttpConfig;
 use std::time::Duration;
 
@@ -137,7 +136,7 @@ impl HttpClient {
                 None => {
                     return Err(RuntimeError::HttpRequest(
                         "Failed to clone request".to_string(),
-                    ))
+                    ));
                 }
             }
         }

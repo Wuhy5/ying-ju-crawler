@@ -1,9 +1,10 @@
 //! # 字符串过滤器
 
-use crate::error::RuntimeError;
-use crate::extractor::filter::Filter;
-use crate::extractor::ExtractValue;
-use crate::Result;
+use crate::{
+    Result,
+    error::RuntimeError,
+    extractor::{ExtractValue, filter::Filter},
+};
 use serde_json::Value;
 
 /// Trim 过滤器

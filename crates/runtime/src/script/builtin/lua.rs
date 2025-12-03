@@ -14,9 +14,8 @@ pub fn register_builtin_functions(lua: &Lua) -> LuaResult<()> {
     let upper_fn = lua.create_function(|_, s: String| Ok(s.to_uppercase()))?;
     globals.set("upper", upper_fn)?;
 
-    let replace_fn = lua.create_function(|_, (s, from, to): (String, String, String)| {
-        Ok(s.replace(&from, &to))
-    })?;
+    let replace_fn = lua
+        .create_function(|_, (s, from, to): (String, String, String)| Ok(s.replace(&from, &to)))?;
     globals.set("replace", replace_fn)?;
 
     let split_fn = lua.create_function(|lua, (s, sep): (String, String)| {
@@ -43,9 +42,8 @@ pub fn register_builtin_functions(lua: &Lua) -> LuaResult<()> {
     })?;
     globals.set("base64_encode", base64_encode_fn)?;
 
-    let url_encode_fn = lua.create_function(|_, s: String| {
-        Ok(urlencoding::encode(&s).to_string())
-    })?;
+    let url_encode_fn =
+        lua.create_function(|_, s: String| Ok(urlencoding::encode(&s).to_string()))?;
     globals.set("url_encode", url_encode_fn)?;
 
     let md5_fn = lua.create_function(|_, s: String| {

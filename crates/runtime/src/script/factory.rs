@@ -27,7 +27,7 @@ impl ScriptLanguage {
             _ => None,
         }
     }
-    
+
     /// 转为字符串
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -49,15 +49,17 @@ impl ScriptEngineFactory {
             ScriptLanguage::Rhai => Arc::new(RhaiScriptEngine::new()),
             ScriptLanguage::JavaScript => Arc::new(JsScriptEngine::new()),
             ScriptLanguage::Lua => Arc::new(LuaScriptEngine::new()),
-            ScriptLanguage::Python => Arc::new(PythonScriptEngine::new().expect("Failed to create Python engine")),
+            ScriptLanguage::Python => {
+                Arc::new(PythonScriptEngine::new().expect("Failed to create Python engine"))
+            }
         }
     }
-    
+
     /// 从字符串创建引擎
     pub fn create_from_str(lang: &str) -> Option<Arc<dyn ScriptEngine>> {
         ScriptLanguage::from_str(lang).map(Self::create)
     }
-    
+
     /// 创建默认引擎 (Rhai)
     pub fn create_default() -> Arc<dyn ScriptEngine> {
         Self::create(ScriptLanguage::Rhai)
@@ -67,28 +69,34 @@ impl ScriptEngineFactory {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_factory() {
         let rhai = ScriptEngineFactory::create(ScriptLanguage::Rhai);
         assert_eq!(rhai.engine_name(), "rhai");
-        
+
         let js = ScriptEngineFactory::create(ScriptLanguage::JavaScript);
         assert_eq!(js.engine_name(), "javascript");
-        
+
         let lua = ScriptEngineFactory::create(ScriptLanguage::Lua);
         assert_eq!(lua.engine_name(), "lua");
-        
+
         let python = ScriptEngineFactory::create(ScriptLanguage::Python);
         assert_eq!(python.engine_name(), "python");
     }
-    
+
     #[test]
     fn test_parse_language() {
         assert_eq!(ScriptLanguage::from_str("rhai"), Some(ScriptLanguage::Rhai));
-        assert_eq!(ScriptLanguage::from_str("js"), Some(ScriptLanguage::JavaScript));
+        assert_eq!(
+            ScriptLanguage::from_str("js"),
+            Some(ScriptLanguage::JavaScript)
+        );
         assert_eq!(ScriptLanguage::from_str("lua"), Some(ScriptLanguage::Lua));
-        assert_eq!(ScriptLanguage::from_str("python"), Some(ScriptLanguage::Python));
+        assert_eq!(
+            ScriptLanguage::from_str("python"),
+            Some(ScriptLanguage::Python)
+        );
         assert_eq!(ScriptLanguage::from_str("py"), Some(ScriptLanguage::Python));
         assert_eq!(ScriptLanguage::from_str("unknown"), None);
     }

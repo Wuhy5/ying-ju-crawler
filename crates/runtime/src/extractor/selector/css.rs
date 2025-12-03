@@ -1,9 +1,11 @@
 //! # CSS 选择器执行器
 
-use crate::context::Context;
-use crate::error::RuntimeError;
-use crate::extractor::{ExtractValue, StepExecutor};
-use crate::Result;
+use crate::{
+    Result,
+    context::Context,
+    error::RuntimeError,
+    extractor::{ExtractValue, StepExecutor},
+};
 use crawler_schema::SelectorStep;
 
 /// CSS 选择器执行器
@@ -25,7 +27,7 @@ impl StepExecutor for CssSelectorExecutor {
             _ => {
                 return Err(RuntimeError::Extraction(
                     "CSS selector requires HTML input".to_string(),
-                ))
+                ));
             }
         };
 

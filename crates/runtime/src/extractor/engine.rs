@@ -2,10 +2,12 @@
 //!
 //! 核心提取逻辑
 
-use crate::context::Context;
-use crate::error::RuntimeError;
-use crate::extractor::{ExtractValue, StepExecutorFactory};
-use crate::Result;
+use crate::{
+    Result,
+    context::Context,
+    error::RuntimeError,
+    extractor::{ExtractValue, StepExecutorFactory},
+};
 use crawler_schema::FieldExtractor;
 
 /// 提取引擎

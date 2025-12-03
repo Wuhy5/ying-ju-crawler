@@ -2,8 +2,8 @@
 //!
 //! 中间值表示，避免频繁的类型转换
 
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use serde::{Serialize, Deserialize};
 
 /// 提取值
 ///
@@ -47,9 +47,7 @@ impl ExtractValue {
             Self::String(s) => Value::String(s.clone()),
             Self::Json(v) => v.clone(),
             Self::Html(h) => Value::String(h.clone()),
-            Self::Array(arr) => {
-                Value::Array(arr.iter().map(|v| v.as_json()).collect())
-            }
+            Self::Array(arr) => Value::Array(arr.iter().map(|v| v.as_json()).collect()),
             Self::Null => Value::Null,
         }
     }
@@ -58,9 +56,7 @@ impl ExtractValue {
     pub fn from_json(value: &Value) -> Self {
         match value {
             Value::String(s) => Self::String(s.clone()),
-            Value::Array(arr) => {
-                Self::Array(arr.iter().map(|v| Self::from_json(v)).collect())
-            }
+            Value::Array(arr) => Self::Array(arr.iter().map(|v| Self::from_json(v)).collect()),
             _ => Self::Json(value.clone()),
         }
     }

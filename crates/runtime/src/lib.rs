@@ -5,6 +5,7 @@
 //! - HTTP 请求
 //! - 数据提取
 //! - 流程执行
+//! - WebView 集成（通过依赖注入）
 //!
 //! ## 架构设计
 //!
@@ -14,6 +15,8 @@
 //! FlowExecutor (流程执行)
 //!   ↓
 //! TemplateRenderer → HttpClient → ExtractEngine
+//!   ↓                    ↓
+//! WebViewProvider ← ChallengeHandler
 //!   ↓
 //! 输出结果
 //! ```
@@ -42,6 +45,9 @@ pub mod script;
 // 爬虫运行时主入口
 pub mod crawler;
 
+// WebView 提供者
+pub mod webview;
+
 // 工具函数
 pub mod util;
 
@@ -49,7 +55,8 @@ pub mod util;
 pub use context::Context;
 pub use crawler::CrawlerRuntime;
 pub use error::RuntimeError;
-pub use script::{ScriptEngine, RhaiScriptEngine, ScriptContext};
+pub use script::{RhaiScriptEngine, ScriptContext, ScriptEngine};
+pub use webview::{SharedWebViewProvider, WebViewProvider, WebViewRequest, WebViewResponse};
 
 /// 运行时结果类型
 pub type Result<T> = std::result::Result<T, RuntimeError>;

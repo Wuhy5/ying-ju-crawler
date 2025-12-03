@@ -24,8 +24,7 @@
 // });
 // ```
 
-use super::engine::ScriptEngine;
-use super::context::ScriptContext;
+use super::{context::ScriptContext, engine::ScriptEngine};
 use crate::Result;
 use std::time::Duration;
 

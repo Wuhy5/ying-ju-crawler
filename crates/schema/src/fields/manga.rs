@@ -5,8 +5,10 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use super::common::{FieldRule, OptionalFieldRule};
-use super::list_rules::ChapterListRule;
+use super::{
+    common::{FieldRule, OptionalFieldRule},
+    list_rules::ChapterListRule,
+};
 
 /// 漫画详情字段规则 (MangaDetailFields)
 /// 定义漫画详情页需要提取的所有字段

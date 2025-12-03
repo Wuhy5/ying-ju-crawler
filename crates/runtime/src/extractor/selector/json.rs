@@ -1,9 +1,11 @@
 //! # JSON 选择器执行器
 
-use crate::context::Context;
-use crate::error::RuntimeError;
-use crate::extractor::{ExtractValue, StepExecutor};
-use crate::Result;
+use crate::{
+    Result,
+    context::Context,
+    error::RuntimeError,
+    extractor::{ExtractValue, StepExecutor},
+};
 use crawler_schema::SelectorStep;
 
 /// JSON 选择器执行器
@@ -24,14 +26,13 @@ impl StepExecutor for JsonSelectorExecutor {
             ExtractValue::Json(v) => v,
             ExtractValue::String(s) => {
                 // 尝试解析 JSON
-                &serde_json::from_str(s).map_err(|e| {
-                    RuntimeError::Extraction(format!("Failed to parse JSON: {}", e))
-                })?
+                &serde_json::from_str(s)
+                    .map_err(|e| RuntimeError::Extraction(format!("Failed to parse JSON: {}", e)))?
             }
             _ => {
                 return Err(RuntimeError::Extraction(
                     "JSON selector requires JSON input".to_string(),
-                ))
+                ));
             }
         };
 

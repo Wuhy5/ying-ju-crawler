@@ -2,15 +2,20 @@
 //!
 //! 主入口，整合所有模块
 
-use crate::context::Context;
-use crate::error::RuntimeError;
-use crate::extractor::ExtractEngine;
-use crate::flow::detail::{DetailFlowExecutor, DetailRequest, DetailResponse};
-use crate::flow::search::{SearchFlowExecutor, SearchRequest, SearchResponse};
-use crate::flow::FlowExecutor;
-use crate::http::HttpClient;
-use crate::template::TemplateEngine;
-use crate::Result;
+use crate::{
+    Result,
+    context::Context,
+    error::RuntimeError,
+    extractor::ExtractEngine,
+    flow::{
+        FlowExecutor,
+        detail::{DetailFlowExecutor, DetailRequest, DetailResponse},
+        search::{SearchFlowExecutor, SearchRequest, SearchResponse},
+    },
+    http::HttpClient,
+    template::TemplateEngine,
+    webview::{SharedWebViewProvider, noop_provider},
+};
 use crawler_schema::CrawlerRule;
 use std::sync::Arc;
 
@@ -26,13 +31,26 @@ pub struct CrawlerRuntime {
     template_engine: Arc<TemplateEngine>,
     /// 提取引擎
     extract_engine: Arc<ExtractEngine>,
+    /// WebView 提供者
+    webview_provider: SharedWebViewProvider,
     /// 全局上下文
     context: Context,
 }
 
 impl CrawlerRuntime {
-    /// 创建新的运行时实例
+    /// 创建新的运行时实例（不带 WebView 支持）
+    ///
+    /// 如果规则包含需要 WebView 的配置（如登录、人机验证），
+    /// 相关功能将不可用。推荐使用 `builder()` 方法注入 WebView 提供者。
     pub fn new(rule: CrawlerRule) -> Result<Self> {
+        Self::with_webview_provider(rule, noop_provider())
+    }
+
+    /// 创建带 WebView 支持的运行时实例
+    pub fn with_webview_provider(
+        rule: CrawlerRule,
+        webview_provider: SharedWebViewProvider,
+    ) -> Result<Self> {
         // 创建 HTTP 客户端
         let http_config = rule.http.clone().unwrap_or_default();
         let http_client = Arc::new(HttpClient::new(http_config)?);
@@ -51,6 +69,7 @@ impl CrawlerRuntime {
             http_client,
             template_engine,
             extract_engine,
+            webview_provider,
             context,
         })
     }
@@ -103,6 +122,11 @@ impl CrawlerRuntime {
         &self.extract_engine
     }
 
+    /// 获取 WebView 提供者
+    pub fn webview_provider(&self) -> &SharedWebViewProvider {
+        &self.webview_provider
+    }
+
     /// 获取全局上下文
     pub fn context(&self) -> &Context {
         &self.context
@@ -111,6 +135,11 @@ impl CrawlerRuntime {
     /// 获取全局上下文的可变引用
     pub fn context_mut(&mut self) -> &mut Context {
         &mut self.context
+    }
+
+    /// 检查是否支持 WebView 功能
+    pub fn has_webview_support(&self) -> bool {
+        self.webview_provider.name() != "NoopWebViewProvider"
     }
 }
 

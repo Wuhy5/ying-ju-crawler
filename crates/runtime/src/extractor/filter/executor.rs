@@ -1,9 +1,10 @@
 //! # 过滤器执行器
 
-use crate::context::Context;
-use crate::extractor::filter::registry::global_registry;
-use crate::extractor::{ExtractValue, StepExecutor};
-use crate::Result;
+use crate::{
+    Result,
+    context::Context,
+    extractor::{ExtractValue, StepExecutor, filter::registry::global_registry},
+};
 use crawler_schema::FilterStep;
 use serde_json::Value;
 

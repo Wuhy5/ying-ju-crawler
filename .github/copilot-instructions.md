@@ -21,23 +21,42 @@ schema/
 ├── core.rs          # CrawlerRule 顶级结构
 ├── extract.rs       # ExtractStep, FieldExtractor 提取流程
 ├── template.rs      # Template 字符串类型
-├── config/          # HttpConfig, Meta, ScriptingConfig
+├── script.rs        # Script 脚本调用（内联/文件/URL）
+├── config/          # HttpConfig, Meta, ChallengeConfig
+│   ├── http.rs      # HTTP 配置
+│   ├── meta.rs      # 元数据
+│   └── challenge.rs # 人机验证配置（Cloudflare 等）
 ├── fields/          # 字段规则：VideoDetailFields, BookContentFields 等
-└── flow/            # 流程定义：SearchFlow, DetailFlow, DiscoveryFlow 等
+└── flow/            # 流程定义
+    ├── search.rs    # 搜索流程
+    ├── detail.rs    # 详情流程
+    ├── discovery.rs # 发现页（分类/筛选）
+    ├── login.rs     # 登录（Script/WebView/Credential）
+    └── content.rs   # 内容页
 
 runtime/
-├── template.rs      # TemplateExt trait (render, validate, extract_variables)
-├── config.rs        # ConfigMerge, HttpConfigExt trait
-├── context.rs       # RuntimeContext 变量存储
-└── validation.rs    # RuleValidate trait
+├── template/        # 模板引擎（Tera）
+├── http/            # HTTP 客户端
+├── extractor/       # 数据提取引擎
+├── script/          # 脚本执行引擎（Rhai/JS）
+├── webview/         # WebView 提供者（依赖注入）
+│   ├── provider.rs  # WebViewProvider trait
+│   ├── request.rs   # 请求配置
+│   └── response.rs  # 响应结果
+├── flow/            # 流程执行器
+├── crawler/         # Runtime 主入口
+└── context/         # 执行上下文
 ```
 
 ### 数据流模型
 ```
 CrawlerRule → Flow (search/detail/discovery) → FieldExtractor → ExtractStep[]
+                  ↓
+            ChallengeHandler → WebViewProvider (依赖注入)
 ```
-- 每个 `ExtractStep` 只执行一个原子操作（css/json/xpath/regex/filter/attr/index）
+- 每个 `ExtractStep` 只执行一个原子操作（css/json/regex/filter/attr/index）
 - 步骤链式执行，前一步输出作为后一步输入
+- WebView 能力通过 trait 注入，Runtime 不直接依赖 GUI 库
 
 ## 开发约定
 
@@ -78,8 +97,10 @@ impl TemplateExt for Template { /* ... */ }
 - 使用 `thiserror` 定义，中文错误消息
 
 ### 项目规范
-- 代码风格遵循 Rust 官方规范（`rustfmt`）
-- 使用 Clippy 检查代码质量
+- 代码风格遵循 Rust 官方规范
+- **完成代码任务后必须执行 `cargo +nightly fmt` 格式化代码**
+- 使用 Clippy 检查代码质量（`cargo clippy`）
+- 部分警告（如未使用的代码 `dead_code`、`unused_variables`）可以暂时忽略
 
 ### 开发设计
 - 多使用 trait 和泛型，减少重复代码
@@ -99,8 +120,17 @@ impl TemplateExt for Template { /* ... */ }
 ```bash
 cargo build                      # 构建所有 crate
 cargo test                       # 运行所有测试
+cargo +nightly fmt               # 格式化代码（必须使用 nightly）
+cargo clippy                     # 代码质量检查
 cargo run --bin generate_schema  # 生成 JSON Schema
 ```
+
+## 开发流程
+
+完成代码任务后，按以下顺序执行：
+1. `cargo +nightly fmt` - 格式化代码
+2. `cargo clippy` - 检查代码质量（可忽略 `dead_code`、`unused_variables` 等警告）
+3. `cargo test` - 运行测试（如有）
 
 ## 版本管理
 

@@ -1,9 +1,11 @@
 //! # 正则表达式选择器执行器
 
-use crate::context::Context;
-use crate::error::RuntimeError;
-use crate::extractor::{ExtractValue, StepExecutor};
-use crate::Result;
+use crate::{
+    Result,
+    context::Context,
+    error::RuntimeError,
+    extractor::{ExtractValue, StepExecutor},
+};
 use crawler_schema::RegexStep;
 
 /// 正则表达式选择器执行器
@@ -20,9 +22,9 @@ impl RegexSelectorExecutor {
 impl StepExecutor for RegexSelectorExecutor {
     fn execute(&self, input: &ExtractValue, _context: &Context) -> Result<ExtractValue> {
         // 获取字符串
-        let text = input.as_string().ok_or_else(|| {
-            RuntimeError::Extraction("Regex requires string input".to_string())
-        })?;
+        let text = input
+            .as_string()
+            .ok_or_else(|| RuntimeError::Extraction("Regex requires string input".to_string()))?;
 
         // 解析正则配置
         let (pattern, group, global) = match &self.regex {
@@ -35,9 +37,8 @@ impl StepExecutor for RegexSelectorExecutor {
         };
 
         // 编译正则表达式
-        let re = regex::Regex::new(pattern).map_err(|e| {
-            RuntimeError::Extraction(format!("Invalid regex pattern: {}", e))
-        })?;
+        let re = regex::Regex::new(pattern)
+            .map_err(|e| RuntimeError::Extraction(format!("Invalid regex pattern: {}", e)))?;
 
         if global {
             // 全局匹配

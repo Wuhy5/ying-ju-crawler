@@ -1,8 +1,10 @@
 //! # 常量值执行器
 
-use crate::context::Context;
-use crate::extractor::{ExtractValue, StepExecutor};
-use crate::Result;
+use crate::{
+    Result,
+    context::Context,
+    extractor::{ExtractValue, StepExecutor},
+};
 use serde_json::Value;
 
 /// 常量值执行器

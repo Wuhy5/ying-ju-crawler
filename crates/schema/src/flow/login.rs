@@ -5,8 +5,7 @@
 //! - `webview`: 网页模式，打开浏览器，用户操作网页，脚本检测状态
 //! - `credential`: 凭证模式，手动粘贴 Cookie/Token/Header 等认证信息
 
-use crate::script::Script;
-use crate::template::Template;
+use crate::{script::Script, template::Template};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

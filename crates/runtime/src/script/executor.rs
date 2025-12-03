@@ -1,9 +1,11 @@
 //! 脚本执行器 (StepExecutor 实现)
 
-use crate::context::Context;
-use crate::Result;
-use crate::extractor::{ExtractValue, StepExecutor};
-use crate::script::{ScriptEngine, ScriptContext};
+use crate::{
+    Result,
+    context::Context,
+    extractor::{ExtractValue, StepExecutor},
+    script::{ScriptContext, ScriptEngine},
+};
 use crawler_schema::script::{Script, ScriptSource};
 use std::sync::Arc;
 
@@ -20,7 +22,7 @@ impl ScriptExecutor {
             engine: crate::script::ScriptEngineFactory::create_default(),
         }
     }
-    
+
     /// 使用自定义引擎创建
     pub fn with_engine(engine: Arc<dyn ScriptEngine>) -> Self {
         Self { engine }
@@ -54,18 +56,20 @@ pub fn execute_script_step(
         ScriptSource::Code(code) => code,
         ScriptSource::File(path) => {
             // TODO: 从文件加载脚本
-            return Err(crate::error::RuntimeError::ScriptRuntime(
-                format!("从文件加载脚本暂未实现: {}", path)
-            ));
+            return Err(crate::error::RuntimeError::ScriptRuntime(format!(
+                "从文件加载脚本暂未实现: {}",
+                path
+            )));
         }
         ScriptSource::Url(url) => {
             // TODO: 从 URL 加载脚本
-            return Err(crate::error::RuntimeError::ScriptRuntime(
-                format!("从 URL 加载脚本暂未实现: {}", url)
-            ));
+            return Err(crate::error::RuntimeError::ScriptRuntime(format!(
+                "从 URL 加载脚本暂未实现: {}",
+                url
+            )));
         }
     };
-    
+
     // TODO: 将输入转换为字符串(需要根据 ExtractValue 的实际定义实现)
     let input_str = match &input {
         ExtractValue::String(s) => s.clone(),
@@ -77,7 +81,7 @@ pub fn execute_script_step(
         }
         ExtractValue::Null => String::new(),
     };
-    
+
     // 创建脚本上下文，包含参数
     let mut variables = std::collections::HashMap::new();
     if let Some(params) = step.params() {
@@ -85,12 +89,12 @@ pub fn execute_script_step(
             variables.insert(key.clone(), value.clone());
         }
     }
-    
+
     let script_context = ScriptContext::new(input_str, variables);
-    
+
     // 执行脚本
     let result = engine.execute(&script, &script_context)?;
-    
+
     // 返回字符串结果
     Ok(ExtractValue::String(result))
 }

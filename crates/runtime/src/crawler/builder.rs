@@ -2,28 +2,68 @@
 //!
 //! 使用构建器模式创建 CrawlerRuntime
 
-use crate::crawler::CrawlerRuntime;
-use crate::error::RuntimeError;
-use crate::Result;
+use crate::{
+    Result,
+    crawler::CrawlerRuntime,
+    error::RuntimeError,
+    webview::{SharedWebViewProvider, noop_provider},
+};
 use crawler_schema::CrawlerRule;
 use std::path::Path;
 
 /// 爬虫运行时构建器
 ///
 /// 提供便捷的 API 来创建 CrawlerRuntime 实例
+///
+/// # 示例
+///
+/// ```rust,ignore
+/// // 基本用法
+/// let runtime = CrawlerRuntime::builder()
+///     .rule_file("rule.toml")?
+///     .build()?;
+///
+/// // 带 WebView 支持
+/// let runtime = CrawlerRuntime::builder()
+///     .rule(rule)
+///     .webview_provider(my_webview_provider)
+///     .build()?;
+/// ```
 pub struct CrawlerRuntimeBuilder {
     rule: Option<CrawlerRule>,
+    webview_provider: Option<SharedWebViewProvider>,
 }
 
 impl CrawlerRuntimeBuilder {
     /// 创建新的构建器
     pub fn new() -> Self {
-        Self { rule: None }
+        Self {
+            rule: None,
+            webview_provider: None,
+        }
     }
 
     /// 从规则对象构建
     pub fn rule(mut self, rule: CrawlerRule) -> Self {
         self.rule = Some(rule);
+        self
+    }
+
+    /// 设置 WebView 提供者
+    ///
+    /// 如果规则包含登录流程（webview 模式）或人机验证配置，
+    /// 必须提供 WebView 提供者，否则相关功能将失败。
+    pub fn webview_provider<P: crate::webview::WebViewProvider + 'static>(
+        mut self,
+        provider: P,
+    ) -> Self {
+        self.webview_provider = Some(std::sync::Arc::new(provider));
+        self
+    }
+
+    /// 设置共享的 WebView 提供者
+    pub fn webview_provider_shared(mut self, provider: SharedWebViewProvider) -> Self {
+        self.webview_provider = Some(provider);
         self
     }
 
@@ -63,7 +103,9 @@ impl CrawlerRuntimeBuilder {
             .rule
             .ok_or_else(|| RuntimeError::Config("Rule not provided".to_string()))?;
 
-        CrawlerRuntime::new(rule)
+        let webview_provider = self.webview_provider.unwrap_or_else(noop_provider);
+
+        CrawlerRuntime::with_webview_provider(rule, webview_provider)
     }
 }
 
@@ -98,5 +140,9 @@ mod tests {
             .build();
 
         assert!(runtime.is_ok());
+
+        // 默认没有 WebView 支持
+        let runtime = runtime.unwrap();
+        assert!(!runtime.has_webview_support());
     }
 }

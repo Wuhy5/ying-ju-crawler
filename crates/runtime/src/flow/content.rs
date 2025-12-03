@@ -1,8 +1,6 @@
 //! # 内容流程执行器
 
-use crate::context::Context;
-use crate::flow::FlowExecutor;
-use crate::Result;
+use crate::{Result, context::Context, flow::FlowExecutor};
 use async_trait::async_trait;
 use crawler_schema::ContentFlow;
 

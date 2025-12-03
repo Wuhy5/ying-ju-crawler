@@ -1,9 +1,11 @@
 //! # 索引/切片执行器
 
-use crate::context::Context;
-use crate::error::RuntimeError;
-use crate::extractor::{ExtractValue, StepExecutor};
-use crate::Result;
+use crate::{
+    Result,
+    context::Context,
+    error::RuntimeError,
+    extractor::{ExtractValue, StepExecutor},
+};
 use crawler_schema::IndexStep;
 
 /// 索引执行器
@@ -35,7 +37,10 @@ impl StepExecutor for IndexExecutor {
                 IndexStep::Slice(slice_str) => {
                     // 解析切片：start:end 或 start:end:step
                     let parts: Vec<&str> = slice_str.split(':').collect();
-                    let start = parts.get(0).and_then(|s| s.parse::<usize>().ok()).unwrap_or(0);
+                    let start = parts
+                        .get(0)
+                        .and_then(|s| s.parse::<usize>().ok())
+                        .unwrap_or(0);
                     let end = parts
                         .get(1)
                         .and_then(|s| s.parse::<usize>().ok())

@@ -1,9 +1,10 @@
 //! # 类型转换过滤器
 
-use crate::error::RuntimeError;
-use crate::extractor::filter::Filter;
-use crate::extractor::ExtractValue;
-use crate::Result;
+use crate::{
+    Result,
+    error::RuntimeError,
+    extractor::{ExtractValue, filter::Filter},
+};
 use serde_json::Value;
 
 /// ToInt 过滤器
@@ -15,9 +16,9 @@ impl Filter for ToIntFilter {
             RuntimeError::Extraction("to_int filter requires string input".to_string())
         })?;
 
-        let num = s.parse::<i64>().map_err(|e| {
-            RuntimeError::Extraction(format!("Failed to parse int: {}", e))
-        })?;
+        let num = s
+            .parse::<i64>()
+            .map_err(|e| RuntimeError::Extraction(format!("Failed to parse int: {}", e)))?;
 
         Ok(ExtractValue::Json(Value::Number(num.into())))
     }
@@ -35,7 +36,7 @@ impl Filter for ToStringFilter {
             ExtractValue::Array(_) => {
                 return Err(RuntimeError::Extraction(
                     "Cannot convert array to string".to_string(),
-                ))
+                ));
             }
             ExtractValue::Null => String::new(),
         };

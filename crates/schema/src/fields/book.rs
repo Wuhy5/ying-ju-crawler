@@ -5,8 +5,10 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use super::common::{FieldRule, OptionalFieldRule};
-use super::list_rules::ChapterListRule;
+use super::{
+    common::{FieldRule, OptionalFieldRule},
+    list_rules::ChapterListRule,
+};
 
 /// 书籍详情字段规则 (BookDetailFields)
 /// 定义书籍详情页需要提取的所有字段

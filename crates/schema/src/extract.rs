@@ -58,9 +58,9 @@
 //! | `var` | 上下文变量 |
 //! | `script` | 自定义脚本 |
 
+use crate::script::Script;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::script::Script;
 
 // ============================================================================
 // 核心提取器

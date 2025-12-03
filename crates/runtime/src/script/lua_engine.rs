@@ -1,8 +1,8 @@
 // TODO: mlua Lua 引擎实现
-// 
+//
 // 策略: mlua 已启用 send feature, Lua 实例支持 Send + Sync
 // 可以安全地跨线程共享
-// 
+//
 // 需要实现的功能:
 // 1. 使用 Lua::new() 创建引擎实例
 // 2. 注册内置函数 (trim, base64_encode, md5 等)
@@ -14,8 +14,7 @@
 // 4. JSON <-> Lua Value 转换
 // 5. 将 ScriptContext 映射到 Lua 全局变量
 
-use super::engine::ScriptEngine;
-use super::context::ScriptContext;
+use super::{context::ScriptContext, engine::ScriptEngine};
 use crate::Result;
 use std::time::Duration;
 

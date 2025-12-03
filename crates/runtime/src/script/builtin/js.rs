@@ -3,22 +3,62 @@ use boa_engine::{Context, JsResult, JsValue, NativeFunction, js_string};
 /// 为 Boa 引擎注册内置函数
 pub fn register_builtin_functions(context: &mut Context) -> JsResult<()> {
     // 字符串处理函数
-    context.register_global_builtin_callable(js_string!("trim"), 1, NativeFunction::from_fn_ptr(trim))?;
-    context.register_global_builtin_callable(js_string!("lower"), 1, NativeFunction::from_fn_ptr(lower))?;
-    context.register_global_builtin_callable(js_string!("upper"), 1, NativeFunction::from_fn_ptr(upper))?;
-    context.register_global_builtin_callable(js_string!("replace"), 3, NativeFunction::from_fn_ptr(replace))?;
-    context.register_global_builtin_callable(js_string!("split"), 2, NativeFunction::from_fn_ptr(split))?;
+    context.register_global_builtin_callable(
+        js_string!("trim"),
+        1,
+        NativeFunction::from_fn_ptr(trim),
+    )?;
+    context.register_global_builtin_callable(
+        js_string!("lower"),
+        1,
+        NativeFunction::from_fn_ptr(lower),
+    )?;
+    context.register_global_builtin_callable(
+        js_string!("upper"),
+        1,
+        NativeFunction::from_fn_ptr(upper),
+    )?;
+    context.register_global_builtin_callable(
+        js_string!("replace"),
+        3,
+        NativeFunction::from_fn_ptr(replace),
+    )?;
+    context.register_global_builtin_callable(
+        js_string!("split"),
+        2,
+        NativeFunction::from_fn_ptr(split),
+    )?;
 
     // JSON 解析
-    context.register_global_builtin_callable(js_string!("json_parse"), 1, NativeFunction::from_fn_ptr(json_parse))?;
+    context.register_global_builtin_callable(
+        js_string!("json_parse"),
+        1,
+        NativeFunction::from_fn_ptr(json_parse),
+    )?;
 
     // 编码函数
-    context.register_global_builtin_callable(js_string!("base64_encode"), 1, NativeFunction::from_fn_ptr(base64_encode))?;
-    context.register_global_builtin_callable(js_string!("url_encode"), 1, NativeFunction::from_fn_ptr(url_encode))?;
-    context.register_global_builtin_callable(js_string!("md5"), 1, NativeFunction::from_fn_ptr(md5))?;
+    context.register_global_builtin_callable(
+        js_string!("base64_encode"),
+        1,
+        NativeFunction::from_fn_ptr(base64_encode),
+    )?;
+    context.register_global_builtin_callable(
+        js_string!("url_encode"),
+        1,
+        NativeFunction::from_fn_ptr(url_encode),
+    )?;
+    context.register_global_builtin_callable(
+        js_string!("md5"),
+        1,
+        NativeFunction::from_fn_ptr(md5),
+    )?;
 
     // 正则匹配
-    context.register_global_builtin_callable(js_string!("regex_match"), 2, NativeFunction::from_fn_ptr(regex_match))?;
+    context.register_global_builtin_callable(
+        js_string!("regex_match"),
+        2,
+        NativeFunction::from_fn_ptr(regex_match),
+    )?;
 
     Ok(())
 }

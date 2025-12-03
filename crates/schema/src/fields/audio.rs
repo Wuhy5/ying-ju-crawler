@@ -5,8 +5,10 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use super::common::{FieldRule, OptionalFieldRule};
-use super::list_rules::TrackListRule;
+use super::{
+    common::{FieldRule, OptionalFieldRule},
+    list_rules::TrackListRule,
+};
 
 /// 音频详情字段规则 (AudioDetailFields)
 /// 定义音频详情页需要提取的所有字段

@@ -2,12 +2,9 @@
 //!
 //! 使用工厂模式管理所有过滤器
 
-use crate::error::RuntimeError;
-use crate::extractor::ExtractValue;
-use crate::Result;
+use crate::{Result, error::RuntimeError, extractor::ExtractValue};
 use serde_json::Value;
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 /// 过滤器 trait
 pub trait Filter: Send + Sync {
@@ -44,15 +41,10 @@ impl FilterRegistry {
     }
 
     /// 应用过滤器
-    pub fn apply(
-        &self,
-        name: &str,
-        input: &ExtractValue,
-        args: &[Value],
-    ) -> Result<ExtractValue> {
-        let filter = self.get(name).ok_or_else(|| {
-            RuntimeError::Extraction(format!("Filter not found: {}", name))
-        })?;
+    pub fn apply(&self, name: &str, input: &ExtractValue, args: &[Value]) -> Result<ExtractValue> {
+        let filter = self
+            .get(name)
+            .ok_or_else(|| RuntimeError::Extraction(format!("Filter not found: {}", name)))?;
 
         filter.apply(input, args)
     }
@@ -66,7 +58,10 @@ impl FilterRegistry {
 
         // 类型转换过滤器
         self.register("to_int", crate::extractor::filter::convert::ToIntFilter);
-        self.register("to_string", crate::extractor::filter::convert::ToStringFilter);
+        self.register(
+            "to_string",
+            crate::extractor::filter::convert::ToStringFilter,
+        );
 
         // TODO: 注册更多过滤器
     }

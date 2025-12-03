@@ -2,8 +2,7 @@
 //!
 //! 提供模板语法验证功能
 
-use crate::template::TemplateEngine;
-use crate::Result;
+use crate::{Result, template::TemplateEngine};
 use crawler_schema::Template;
 
 /// 模板验证器 trait
@@ -31,7 +30,7 @@ mod tests {
 
     #[test]
     fn test_invalid_template() {
-        let template = Template::from("Hello, {{ name }!");  // 缺少闭合
+        let template = Template::from("Hello, {{ name }!"); // 缺少闭合
         assert!(template.validate().is_err());
     }
 }

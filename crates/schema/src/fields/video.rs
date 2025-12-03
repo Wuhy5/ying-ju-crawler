@@ -5,8 +5,10 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use super::common::{FieldRule, OptionalFieldRule};
-use super::list_rules::PlayLineListRule;
+use super::{
+    common::{FieldRule, OptionalFieldRule},
+    list_rules::PlayLineListRule,
+};
 
 /// 视频详情字段规则 (VideoDetailFields)
 /// 定义视频详情页需要提取的所有字段

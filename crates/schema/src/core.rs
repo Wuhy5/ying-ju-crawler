@@ -4,7 +4,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config::{HttpConfig, Meta},
+    config::{ChallengeConfig, HttpConfig, Meta},
     flow::{ContentFlow, DetailFlow, DiscoveryFlow, LoginFlow, SearchFlow},
 };
 
@@ -17,9 +17,11 @@ pub struct CrawlerRule {
     /// 全局的网络请求配置，可被流程局部配置覆盖。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub http: Option<HttpConfig>,
-    
+    /// 人机验证/反爬挑战处理配置
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub challenge: Option<ChallengeConfig>,
+
     // ===== 流程定义 =====
-    
     /// 登录流程（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub login: Option<LoginFlow>,

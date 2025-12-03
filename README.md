@@ -19,22 +19,25 @@ crates/schema/
     ├── core.rs                   # CrawlerRule 顶级结构
     ├── extract.rs                # ExtractStep, FieldExtractor 提取流程
     ├── template.rs               # Template 字符串类型
-    ├── config/                   # HttpConfig, Meta, ScriptingConfig
+    ├── script.rs                 # Script 脚本调用类型（支持内联/文件/URL）
+    ├── config/                   # HttpConfig, Meta, ChallengeConfig
     │   ├── mod.rs
-    │   ├── http_config.rs
-    │   ├── meta.rs
-    │   └── scripting_config.rs
+    │   ├── http.rs               # HTTP 配置
+    │   ├── meta.rs               # 元数据配置
+    │   └── challenge.rs          # 人机验证处理配置（Cloudflare 等）
     ├── fields/                   # 字段规则：VideoDetailFields, BookContentFields 等
     │   ├── mod.rs
     │   ├── video_detail_fields.rs
     │   ├── book_content_fields.rs
     │   └── ...
-    └── flow/                     # 流程定义：SearchFlow, DetailFlow, DiscoveryFlow 等
+    └── flow/                     # 流程定义：SearchFlow, DetailFlow, DiscoveryFlow, LoginFlow 等
         ├── mod.rs
-        ├── search_flow.rs
-        ├── detail_flow.rs
-        ├── discovery_flow.rs
-        └── ...
+        ├── search.rs             # 搜索流程
+        ├── detail.rs             # 详情流程
+        ├── discovery.rs          # 发现页流程（分类/筛选）
+        ├── login.rs              # 登录流程（脚本/WebView/凭证三种模式）
+        ├── content.rs            # 内容页流程
+        └── component.rs          # 可重用组件
 ```
 
 ```plain
@@ -42,7 +45,7 @@ crates/runtime/
 ├── Cargo.toml
 └── src/
     ├── lib.rs                    # 公共导出
-    ├── error.rs                  # ✓ 已存在（统一错误类型）
+    ├── error.rs                  # 统一错误类型
     │
     ├── context/                  # 执行上下文管理
     │   ├── mod.rs
@@ -69,7 +72,6 @@ crates/runtime/
     │   │   ├── mod.rs
     │   │   ├── css.rs            # CSS 选择器
     │   │   ├── json.rs           # JSONPath
-    │   │   ├── xpath.rs          # XPath
     │   │   └── regex.rs          # 正则表达式
     │   ├── filter/               # 过滤器实现
     │   │   ├── mod.rs
@@ -87,6 +89,12 @@ crates/runtime/
     │   ├── loader.rs             # 脚本加载器
     │   └── context.rs            # 脚本执行上下文
     │
+    ├── webview/                  # WebView 提供者（依赖注入）
+    │   ├── mod.rs
+    │   ├── provider.rs           # WebViewProvider trait
+    │   ├── request.rs            # WebView 请求配置
+    │   └── response.rs           # WebView 响应结果
+    │
     ├── flow/                     # 流程执行器
     │   ├── mod.rs
     │   ├── executor.rs           # 流程执行器 trait
@@ -99,7 +107,7 @@ crates/runtime/
     ├── crawler/                  # 爬虫运行时（顶层）
     │   ├── mod.rs
     │   ├── runtime.rs            # CrawlerRuntime 主入口
-    │   └── builder.rs            # Runtime 构建器
+    │   └── builder.rs            # Runtime 构建器（支持 WebView 注入）
     │
     └── util/                     # 工具函数
         ├── mod.rs
@@ -109,7 +117,9 @@ crates/runtime/
 
 ## 主要特性
 
-支持使用 JSON 格式或者 TOML 格式来定义爬虫规则，方便用户进行编辑和管理。
+- 支持使用 JSON 格式或者 TOML 格式来定义爬虫规则，方便用户进行编辑和管理。
+- 提供完整的运行时实现，支持模板渲染、HTTP 请求、数据提取和脚本执行等功能。
+- 采用模块化设计，方便扩展和维护。
 
 ## 版本同步
 
