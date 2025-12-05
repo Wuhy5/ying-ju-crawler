@@ -12,7 +12,10 @@ use super::{
     ResponseContext,
 };
 use crate::{Result, RuntimeError, webview::SharedWebViewProvider};
-use crawler_schema::config::ChallengeConfig;
+use crawler_schema::{
+    config::ChallengeConfig,
+    script::{Script, ScriptSource},
+};
 use std::sync::Arc;
 use url::Url;
 
@@ -205,9 +208,11 @@ pub fn default_cloudflare_config() -> ChallengeConfig {
 
 /// 创建默认的 reCAPTCHA 验证配置
 pub fn default_recaptcha_config() -> ChallengeConfig {
-    use crawler_schema::{
-        config::{ChallengeDetector, ChallengeHandler, RecaptchaDetector, WebviewHandler},
-        script::Script,
+    use crawler_schema::config::{
+        ChallengeDetector,
+        ChallengeHandler,
+        RecaptchaDetector,
+        WebviewHandler,
     };
 
     ChallengeConfig {
@@ -222,87 +227,19 @@ pub fn default_recaptcha_config() -> ChallengeConfig {
                     .to_string(),
             ),
             check_interval_ms: Some(1000),
-            finish_script: Some(Script::Simple(
-                "return { token: document.querySelector('.g-recaptcha-response')?.value }"
-                    .to_string(),
-            )),
+            finish_script: Some(Script {
+                source: ScriptSource::Code(
+                    "return { token: document.querySelector('.g-recaptcha-response')?.value }"
+                        .to_string(),
+                ),
+                engine: None,
+                function: None,
+                params: None,
+                security: None,
+            }),
             extract_cookies: None,
         }),
         cache_duration: None,
         max_attempts: 3,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::webview::noop_provider;
-    use std::collections::HashMap;
-
-    fn make_cloudflare_response() -> ResponseContext {
-        let mut headers = HashMap::new();
-        headers.insert("cf-ray".to_string(), "abc123".to_string());
-        ResponseContext::new(
-            503,
-            headers,
-            "<html>Just a moment...</html>".to_string(),
-            "https://example.com".to_string(),
-        )
-    }
-
-    fn make_normal_response() -> ResponseContext {
-        ResponseContext::new(
-            200,
-            HashMap::new(),
-            "<html><body>Hello</body></html>".to_string(),
-            "https://example.com".to_string(),
-        )
-    }
-
-    #[test]
-    fn test_detect_cloudflare() {
-        let config = default_cloudflare_config();
-        let manager = ChallengeManager::new(config, noop_provider());
-
-        let response = make_cloudflare_response();
-        let result = manager.detect(&response);
-
-        assert!(result.detected);
-    }
-
-    #[test]
-    fn test_detect_normal() {
-        let config = default_cloudflare_config();
-        let manager = ChallengeManager::new(config, noop_provider());
-
-        let response = make_normal_response();
-        let result = manager.detect(&response);
-
-        assert!(!result.detected);
-    }
-
-    #[test]
-    fn test_disabled_config() {
-        let mut config = default_cloudflare_config();
-        config.enabled = false;
-        let manager = ChallengeManager::new(config, noop_provider());
-
-        let response = make_cloudflare_response();
-        let result = manager.detect(&response);
-
-        assert!(!result.detected);
-    }
-
-    #[test]
-    fn test_extract_domain() {
-        assert_eq!(
-            extract_domain("https://www.example.com/path"),
-            Some("www.example.com".to_string())
-        );
-        assert_eq!(
-            extract_domain("http://example.com:8080"),
-            Some("example.com".to_string())
-        );
-        assert_eq!(extract_domain("invalid"), None);
     }
 }

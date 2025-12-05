@@ -3,23 +3,21 @@
 use crate::{
     Result,
     context::Context,
-    extractor::{ExtractValue, StepExecutor},
+    extractor::value::{ExtractValueData, SharedValue},
 };
 use serde_json::Value;
+use std::sync::Arc;
 
 /// 常量值执行器
-pub struct ConstExecutor {
-    value: Value,
-}
+pub struct ConstExecutor;
 
 impl ConstExecutor {
-    pub fn new(value: Value) -> Self {
-        Self { value }
-    }
-}
-
-impl StepExecutor for ConstExecutor {
-    fn execute(&self, _input: ExtractValue, _context: &Context) -> Result<ExtractValue> {
-        Ok(ExtractValue::from_json(&self.value))
+    /// 返回常量值
+    pub fn execute(
+        value: &Value,
+        _input: &ExtractValueData,
+        _context: &Context,
+    ) -> Result<SharedValue> {
+        Ok(Arc::new(ExtractValueData::from_json(value)))
     }
 }

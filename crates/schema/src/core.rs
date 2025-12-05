@@ -4,7 +4,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    config::{ChallengeConfig, HttpConfig, Meta},
+    config::{ChallengeConfig, HttpConfig, Meta, ScriptSecurityConfig},
     flow::{Components, ContentFlow, DetailFlow, DiscoveryFlow, LoginFlow, SearchFlow},
 };
 
@@ -20,12 +20,17 @@ pub struct CrawlerRule {
     /// 人机验证/反爬挑战处理配置
     #[serde(skip_serializing_if = "Option::is_none")]
     pub challenge: Option<ChallengeConfig>,
+    /// 全局脚本执行安全配置
+    ///
+    /// 定义脚本执行的默认安全限制（内存、文件访问、网络、超时）。
+    /// 可被 Script 中的局部 `security` 配置覆盖。
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub script_security: Option<ScriptSecurityConfig>,
     /// 可重用组件定义
     ///
     /// 以名称为键定义可复用的提取逻辑，可在各流程中通过 `use_component` 步骤引用
     #[serde(skip_serializing_if = "Option::is_none")]
     pub components: Option<Components>,
-    // ===== 流程定义 =====
     /// 登录流程（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub login: Option<LoginFlow>,

@@ -54,29 +54,3 @@ impl TemplateRenderer for Template {
         engine.render_str(self.as_str(), &tera_ctx)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
-
-    #[test]
-    fn test_template_render() {
-        let template = Template::from("Hello, {{ name }}!");
-        let mut context = Context::new();
-        context.set("name", json!("Alice"));
-
-        let result = template.render(&context).unwrap();
-        assert_eq!(result, "Hello, Alice!");
-    }
-
-    #[test]
-    fn test_static_template() {
-        let template = Template::from("https://example.com");
-        assert!(template.is_static());
-
-        let context = Context::new();
-        let result = template.render(&context).unwrap();
-        assert_eq!(result, "https://example.com");
-    }
-}

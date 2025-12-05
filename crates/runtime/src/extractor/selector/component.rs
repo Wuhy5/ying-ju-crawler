@@ -8,34 +8,29 @@
 use crate::{
     Result,
     context::Context,
-    extractor::{ExtractValue, StepExecutor},
+    extractor::value::{ExtractValueData, SharedValue},
 };
 use crawler_schema::flow::ComponentRef;
+use std::sync::Arc;
 
 /// 组件引用执行器
-///
-/// 负责解析组件引用并执行组件定义的提取逻辑。
-pub struct ComponentExecutor {
-    component_ref: ComponentRef,
-}
+pub struct ComponentExecutor;
 
 impl ComponentExecutor {
-    /// 创建组件执行器
-    pub fn new(component_ref: ComponentRef) -> Self {
-        Self { component_ref }
-    }
-
     /// 获取组件名称
-    fn component_name(&self) -> &str {
-        match &self.component_ref {
+    fn component_name(component_ref: &ComponentRef) -> &str {
+        match component_ref {
             ComponentRef::Simple(name) => name,
             ComponentRef::WithArgs { name, .. } => name,
         }
     }
-}
 
-impl StepExecutor for ComponentExecutor {
-    fn execute(&self, input: ExtractValue, _context: &Context) -> Result<ExtractValue> {
+    /// 执行组件引用
+    pub fn execute(
+        component_ref: &ComponentRef,
+        input: &ExtractValueData,
+        _context: &Context,
+    ) -> Result<SharedValue> {
         // TODO: 完整实现需要：
         // 1. 从上下文获取全局组件注册表
         // 2. 根据名称查找组件定义
@@ -43,7 +38,7 @@ impl StepExecutor for ComponentExecutor {
         // 4. 执行组件的 extractor 步骤
         //
         // 当前返回输入值作为占位
-        let _ = self.component_name(); // 避免 dead_code 警告
-        Ok(input)
+        let _ = Self::component_name(component_ref); // 避免 dead_code 警告
+        Ok(Arc::new(input.clone()))
     }
 }

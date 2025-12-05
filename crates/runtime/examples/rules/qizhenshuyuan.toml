@@ -1,0 +1,147 @@
+# 七真书院爬虫规则
+# 这是一个基于 Ying-Ju 规范的小说网站爬虫规则示例
+
+# ============================================
+# 元数据配置
+# ============================================
+[meta]
+name = "七真书院"
+author = "Ying-Ju"
+version = "1.0.0"
+spec_version = "1.0.0"
+domain = "www.zqb88.cn"
+media_type = "book"
+description = "七真书院小说网站爬虫规则"
+
+# ============================================
+# 全局 HTTP 配置
+# ============================================
+[http]
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0"
+timeout = 30
+
+[http.request]
+headers = { "Accept" = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Accept-Language" = "zh-CN,zh;q=0.8", "Cookie" = "_ok1_=W8nnzIJER0S9oBXNe3hoptU/1YwZd1Ai39jqV0qik7X/BWPpyqpT2vyqdqud6LdnTsBOIrLOkADwCtexyUfDS40Wg+nRyoUAOMuQ9AgRibyGhTF5da53qihnCkAnzxI5; Hm_tf_nu7etf2ddus=1764832971; Hm_lvt_nu7etf2ddus=1764832971; Hm_lpvt_nu7etf2ddus=1764904978" }
+
+# ============================================
+# 搜索流程
+# ============================================
+[search]
+description = "搜索小说"
+url = "http://www.zqb88.cn/search/"
+
+[search.http.request]
+method = "POST"
+content_type = "application/x-www-form-urlencoded"
+body = "searchkey={{ keyword }}"
+
+[search.pagination]
+type = "none"
+
+# 列表提取规则
+[search.list]
+steps = [{ css = { expr = "dl#nr", all = true } }]
+
+# 列表项字段
+[search.fields.title]
+steps = [{ css = "h3 a" }, { attr = "text" }, { filter = "trim" }]
+
+[search.fields.url]
+steps = [{ css = "a" }, { attr = "href" }]
+
+[search.fields.cover]
+steps = [{ css = "img" }, { attr = "data-original" }]
+nullable = true
+
+[search.fields.author]
+steps = [{ css = ".book_other span" }, { attr = "text" }]
+nullable = true
+
+[search.fields.summary]
+steps = [{ css = ".book_des" }, { attr = "text" }, { filter = "trim" }]
+nullable = true
+
+[search.fields.category]
+steps = [{ css = ".book_other span" }, { index = 1 }, { attr = "text" }]
+nullable = true
+
+[search.fields.latest]
+steps = [{ css = ".book_other a" }, { attr = "text" }, { filter = "trim" }]
+nullable = true
+
+# ============================================
+# 详情页流程
+# ============================================
+[detail]
+description = "获取书籍详情"
+url = "{{ detail_url }}"
+
+[detail.fields]
+media_type = "book"
+
+[detail.fields.title]
+steps = [{ css = ".d_title h1" }, { attr = "text" }, { filter = "trim" }]
+
+[detail.fields.author]
+steps = [{ css = ".p_author a" }, { attr = "text" }, { filter = "trim" }]
+
+[detail.fields.cover]
+steps = [{ css = "#bookimg img" }, { attr = "src" }]
+nullable = true
+
+[detail.fields.intro]
+steps = [{ css = "#bookintro" }, { attr = "text" }, { filter = "trim" }]
+nullable = true
+
+[detail.fields.status]
+steps = [{ css = "#count span" }, { index = 0 }, { attr = "text" }]
+nullable = true
+
+[detail.fields.word_count]
+steps = [{ css = "#count span" }, { index = 1 }, { attr = "text" }]
+nullable = true
+
+[detail.fields.latest_chapter]
+steps = [
+    { css = ".chaw a" },
+    { index = 0 },
+    { attr = "text" },
+    { filter = "trim" },
+]
+nullable = true
+
+# 章节列表
+# ChapterListRule 需要 list, title, url 三个字段
+[detail.fields.chapters]
+# 列表容器
+list.steps = [{ css = { expr = "#chapterList li a", all = true } }]
+# 章节标题（相对于单个章节元素）
+title.steps = [{ attr = "text" }, { filter = "trim" }]
+# 章节 URL（相对于单个章节元素）
+url.steps = [{ attr = "href" }]
+
+# ============================================
+# 内容页流程
+# ============================================
+[content]
+description = "获取章节内容"
+url = "{{ content_url }}"
+
+[content.fields]
+media_type = "book"
+
+[content.fields.title]
+steps = [{ css = ".chapter h1" }, { attr = "text" }, { filter = "trim" }]
+
+[content.fields.content]
+steps = [{ css = "#TextContent" }, { attr = "html" }]
+# 应用内容清理脚本
+# post_script = 'result.replace(/<br\\s*\\/?>/gi, "\\n")'
+
+[content.fields.prev_url]
+steps = [{ css = "#prev_url" }, { attr = "href" }]
+nullable = true
+
+[content.fields.next_url]
+steps = [{ css = "#next_url" }, { attr = "href" }]
+nullable = true

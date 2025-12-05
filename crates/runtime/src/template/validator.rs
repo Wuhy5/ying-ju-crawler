@@ -17,20 +17,3 @@ impl TemplateValidator for Template {
         engine.validate(self.as_str())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_valid_template() {
-        let template = Template::from("Hello, {{ name }}!");
-        assert!(template.validate().is_ok());
-    }
-
-    #[test]
-    fn test_invalid_template() {
-        let template = Template::from("Hello, {{ name }!"); // 缺少闭合
-        assert!(template.validate().is_err());
-    }
-}

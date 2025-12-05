@@ -51,6 +51,9 @@ pub mod webview;
 // 人机验证/反爬处理
 pub mod challenge;
 
+// 数据模型
+pub mod model;
+
 // 工具函数
 pub mod util;
 

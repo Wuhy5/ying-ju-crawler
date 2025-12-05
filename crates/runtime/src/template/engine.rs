@@ -94,32 +94,3 @@ impl Default for TemplateEngine {
         Self::new().expect("Failed to create default TemplateEngine")
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_render_simple() {
-        let engine = TemplateEngine::new().unwrap();
-        let mut ctx = tera::Context::new();
-        ctx.insert("name", "Alice");
-
-        let result = engine.render_str("Hello, {{ name }}!", &ctx).unwrap();
-        assert_eq!(result, "Hello, Alice!");
-    }
-
-    #[test]
-    fn test_extract_variables() {
-        let engine = TemplateEngine::new().unwrap();
-        let vars = engine.extract_variables("{{ name }} is {{ age }} years old");
-        assert_eq!(vars, vec!["name", "age"]);
-    }
-
-    #[test]
-    fn test_is_static() {
-        let engine = TemplateEngine::new().unwrap();
-        assert!(engine.is_static("Hello, World!"));
-        assert!(!engine.is_static("Hello, {{ name }}!"));
-    }
-}

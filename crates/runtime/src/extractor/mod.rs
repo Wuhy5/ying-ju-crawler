@@ -9,5 +9,5 @@ pub mod selector;
 pub mod value;
 
 pub use engine::ExtractEngine;
-pub use executor::{StepExecutor, StepExecutorFactory};
-pub use value::ExtractValue;
+pub use executor::StepExecutorFactory;
+pub use value::{ExtractValueData, SharedValue};

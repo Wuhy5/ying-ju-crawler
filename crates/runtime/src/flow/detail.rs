@@ -4,9 +4,10 @@ use crate::{
     Result,
     context::Context,
     error::RuntimeError,
-    extractor::{ExtractEngine, ExtractValue},
+    extractor::{ExtractEngine, SharedValue, value::ExtractValueData},
     flow::FlowExecutor,
     http::HttpClient,
+    model::{BookDetail, ChapterItem},
     template::TemplateRenderer,
 };
 use async_trait::async_trait;
@@ -23,45 +24,11 @@ pub struct DetailRequest {
     pub url: String,
 }
 
-/// 详情响应（书籍）
-#[derive(Debug, Clone)]
-pub struct BookDetailResponse {
-    /// 标题
-    pub title: String,
-    /// 作者
-    pub author: String,
-    /// 封面
-    pub cover: Option<String>,
-    /// 简介
-    pub intro: Option<String>,
-    /// 分类
-    pub category: Option<String>,
-    /// 状态
-    pub status: Option<String>,
-    /// 最新章节
-    pub last_chapter: Option<String>,
-    /// 字数
-    pub word_count: Option<String>,
-    /// 章节列表
-    pub chapters: Vec<ChapterItem>,
-    /// 原始数据
-    pub raw: serde_json::Value,
-}
-
-/// 章节项
-#[derive(Debug, Clone)]
-pub struct ChapterItem {
-    /// 章节标题
-    pub title: String,
-    /// 章节 URL
-    pub url: String,
-}
-
 /// 详情响应（通用）
 #[derive(Debug, Clone)]
 pub enum DetailResponse {
     /// 书籍详情
-    Book(Box<BookDetailResponse>),
+    Book(Box<BookDetail>),
     /// 其他类型（暂用 JSON）
     Other(serde_json::Value),
 }
@@ -127,15 +94,14 @@ impl DetailFlowExecutor {
 
     /// 提取字符串字段
     fn extract_string(
-        engine: &ExtractEngine,
+        _engine: &ExtractEngine,
         extractor: &crawler_schema::extract::FieldExtractor,
-        input: &ExtractValue,
+        input: &SharedValue,
         context: &Context,
     ) -> Option<String> {
-        engine
-            .extract_field(extractor, input.clone(), context)
+        ExtractEngine::extract_field(extractor, input.as_ref(), context)
             .ok()
-            .and_then(|v| v.as_string())
+            .and_then(|v| v.as_str().map(|s| s.to_string()))
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
     }
@@ -144,9 +110,9 @@ impl DetailFlowExecutor {
     fn extract_book_detail(
         &self,
         fields: &BookDetailFields,
-        html: &ExtractValue,
+        html: &SharedValue,
         context: &Context,
-    ) -> Result<BookDetailResponse> {
+    ) -> Result<BookDetail> {
         // 提取必需字段
         let title =
             Self::extract_string(&self.extract_engine, &fields.title.extractor, html, context)
@@ -198,15 +164,18 @@ impl DetailFlowExecutor {
             vec![]
         };
 
-        Ok(BookDetailResponse {
+        Ok(BookDetail {
             title,
             author,
             cover,
             intro,
             category,
             status,
+            tags: None,
             last_chapter,
+            update_time: None,
             word_count,
+            toc_url: None,
             chapters,
             raw: serde_json::json!({}),
         })
@@ -216,26 +185,25 @@ impl DetailFlowExecutor {
     fn extract_chapters(
         &self,
         rule: &crawler_schema::fields::ChapterListRule,
-        html: &ExtractValue,
+        html: &SharedValue,
         context: &Context,
     ) -> Result<Vec<ChapterItem>> {
         // 先提取列表容器
         let list_result =
-            self.extract_engine
-                .extract_field(&rule.list.extractor, html.clone(), context)?;
+            ExtractEngine::extract_field(&rule.list.extractor, html.as_ref(), context)?;
 
-        let items = match list_result {
-            ExtractValue::Array(arr) => arr,
+        let items = match list_result.as_ref() {
+            ExtractValueData::Array(arr) => arr,
             _ => return Ok(vec![]),
         };
 
         let mut chapters = Vec::new();
-        for item in items {
+        for item in items.iter() {
             let title =
-                Self::extract_string(&self.extract_engine, &rule.title.extractor, &item, context);
+                Self::extract_string(&self.extract_engine, &rule.title.extractor, item, context);
 
             let url =
-                Self::extract_string(&self.extract_engine, &rule.url.extractor, &item, context);
+                Self::extract_string(&self.extract_engine, &rule.url.extractor, item, context);
 
             if let (Some(title), Some(url)) = (title, url) {
                 chapters.push(ChapterItem { title, url });
@@ -264,7 +232,9 @@ impl FlowExecutor for DetailFlowExecutor {
             .text()
             .await
             .map_err(|e| RuntimeError::HttpRequest(format!("读取响应失败: {}", e)))?;
-        let html = ExtractValue::Html(html_text);
+        let html = Arc::new(ExtractValueData::Html(Arc::from(
+            html_text.into_boxed_str(),
+        )));
 
         // 4. 根据媒体类型提取字段
         match &self.flow.fields {

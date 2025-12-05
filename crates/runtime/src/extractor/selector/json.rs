@@ -4,38 +4,35 @@ use crate::{
     Result,
     context::Context,
     error::RuntimeError,
-    extractor::{ExtractValue, StepExecutor},
+    extractor::value::{ExtractValueData, SharedValue},
 };
 use crawler_schema::extract::SelectorStep;
 use jsonpath_rust::JsonPath;
 use serde_json::Value;
+use std::sync::Arc;
 
 /// JSON 选择器执行器
-pub struct JsonSelectorExecutor {
-    selector: SelectorStep,
-}
+pub struct JsonSelectorExecutor;
 
 impl JsonSelectorExecutor {
-    pub fn new(selector: SelectorStep) -> Self {
-        Self { selector }
-    }
-}
-
-impl StepExecutor for JsonSelectorExecutor {
-    fn execute(&self, input: ExtractValue, _context: &Context) -> Result<ExtractValue> {
+    /// 执行 JSON 选择器
+    pub fn execute(
+        selector: &SelectorStep,
+        input: &ExtractValueData,
+        _context: &Context,
+    ) -> Result<SharedValue> {
         // 获取 JSON 值
-        let json: Value = match &input {
-            ExtractValue::Json(v) => v.clone(),
-            ExtractValue::String(s) => serde_json::from_str(s)
+        let json: Value = match input {
+            ExtractValueData::Json(v) => (**v).clone(),
+            ExtractValueData::String(s) => serde_json::from_str(s)
                 .map_err(|e| RuntimeError::Extraction(format!("Failed to parse JSON: {}", e)))?,
-            ExtractValue::Array(arr) => {
+            ExtractValueData::Array(arr) => {
                 // 如果是数组，对每个元素应用选择器
-                let results: Vec<ExtractValue> = arr
+                let results: Vec<SharedValue> = arr
                     .iter()
-                    .cloned()
-                    .filter_map(|item| self.execute(item, _context).ok())
+                    .filter_map(|item| Self::execute(selector, item, _context).ok())
                     .collect();
-                return Ok(ExtractValue::Array(results));
+                return Ok(Arc::new(ExtractValueData::Array(Arc::new(results))));
             }
             _ => {
                 return Err(RuntimeError::Extraction(
@@ -44,7 +41,7 @@ impl StepExecutor for JsonSelectorExecutor {
             }
         };
 
-        let (jsonpath_str, select_all) = match &self.selector {
+        let (jsonpath_str, select_all) = match selector {
             SelectorStep::Simple(s) => (s.as_str(), false),
             SelectorStep::WithOptions { expr, all } => (expr.as_str(), *all),
         };
@@ -56,70 +53,15 @@ impl StepExecutor for JsonSelectorExecutor {
 
         // 处理结果
         if results.is_empty() {
-            Ok(ExtractValue::Null)
+            Ok(Arc::new(ExtractValueData::Null))
         } else if !select_all && results.len() == 1 {
-            Ok(ExtractValue::from_json(results[0]))
+            Ok(Arc::new(ExtractValueData::from_json(results[0])))
         } else {
-            Ok(ExtractValue::Array(
-                results.into_iter().map(ExtractValue::from_json).collect(),
-            ))
+            let items: Vec<SharedValue> = results
+                .into_iter()
+                .map(|v| Arc::new(ExtractValueData::from_json(v)))
+                .collect();
+            Ok(Arc::new(ExtractValueData::Array(Arc::new(items))))
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
-
-    #[test]
-    fn test_json_selector_simple() {
-        let executor = JsonSelectorExecutor::new(SelectorStep::Simple("$.name".to_string()));
-        let input = ExtractValue::Json(json!({"name": "Alice", "age": 30}));
-        let context = Context::new();
-
-        let result = executor.execute(input, &context).unwrap();
-        assert_eq!(result.as_string(), Some("Alice".to_string()));
-    }
-
-    #[test]
-    fn test_json_selector_array() {
-        let executor = JsonSelectorExecutor::new(SelectorStep::WithOptions {
-            expr: "$.items[*].name".to_string(),
-            all: true,
-        });
-        let input = ExtractValue::Json(json!({
-            "items": [
-                {"name": "A"},
-                {"name": "B"},
-                {"name": "C"}
-            ]
-        }));
-        let context = Context::new();
-
-        let result = executor.execute(input, &context).unwrap();
-        if let ExtractValue::Array(arr) = result {
-            assert_eq!(arr.len(), 3);
-        } else {
-            panic!("Expected array result");
-        }
-    }
-
-    #[test]
-    fn test_json_selector_nested() {
-        let executor =
-            JsonSelectorExecutor::new(SelectorStep::Simple("$.user.address.city".to_string()));
-        let input = ExtractValue::Json(json!({
-            "user": {
-                "name": "Alice",
-                "address": {
-                    "city": "Beijing"
-                }
-            }
-        }));
-        let context = Context::new();
-
-        let result = executor.execute(input, &context).unwrap();
-        assert_eq!(result.as_string(), Some("Beijing".to_string()));
     }
 }

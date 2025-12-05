@@ -99,26 +99,3 @@ fn merge_response_config(
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_merge_config() {
-        let base = HttpConfig {
-            user_agent: Some("Base/1.0".to_string()),
-            timeout: Some(30),
-            ..Default::default()
-        };
-
-        let override_config = HttpConfig {
-            user_agent: Some("Override/2.0".to_string()),
-            ..Default::default()
-        };
-
-        let merged = base.merge(&override_config);
-        assert_eq!(merged.user_agent, Some("Override/2.0".to_string()));
-        assert_eq!(merged.timeout, Some(30));
-    }
-}

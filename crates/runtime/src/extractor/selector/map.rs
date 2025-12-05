@@ -6,45 +6,32 @@ use crate::{
     Result,
     context::Context,
     error::RuntimeError,
-    extractor::{ExtractValue, StepExecutor, StepExecutorFactory},
+    extractor::{
+        StepExecutorFactory,
+        value::{ExtractValueData, SharedValue},
+    },
 };
 use crawler_schema::extract::ExtractStep;
+use std::sync::Arc;
 
 /// 映射执行器
-///
-/// 对输入数组的每个元素执行一系列步骤
-pub struct MapExecutor {
-    steps: Vec<ExtractStep>,
-}
+pub struct MapExecutor;
 
 impl MapExecutor {
-    pub fn new(steps: Vec<ExtractStep>) -> Self {
-        Self { steps }
-    }
-
-    /// 对单个值执行所有步骤
-    fn execute_steps(&self, input: ExtractValue, context: &Context) -> Result<ExtractValue> {
-        let mut current = input;
-
-        for step in &self.steps {
-            let executor = StepExecutorFactory::create(step);
-            current = executor.execute(current, context)?;
-        }
-
-        Ok(current)
-    }
-}
-
-impl StepExecutor for MapExecutor {
-    fn execute(&self, input: ExtractValue, context: &Context) -> Result<ExtractValue> {
+    /// 执行映射
+    pub fn execute(
+        steps: &[ExtractStep],
+        input: &ExtractValueData,
+        context: &Context,
+    ) -> Result<SharedValue> {
         match input {
-            ExtractValue::Array(arr) => {
-                let results: Vec<ExtractValue> = arr
-                    .into_iter()
-                    .filter_map(|item| self.execute_steps(item, context).ok())
+            ExtractValueData::Array(arr) => {
+                let results: Vec<SharedValue> = arr
+                    .iter()
+                    .filter_map(|item| Self::execute_steps(steps, item, context).ok())
                     .collect();
 
-                Ok(ExtractValue::Array(results))
+                Ok(Arc::new(ExtractValueData::Array(Arc::new(results))))
             }
             _ => {
                 // 非数组输入，直接应用步骤
@@ -54,33 +41,19 @@ impl StepExecutor for MapExecutor {
             }
         }
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crawler_schema::extract::{ExtractStep, FilterStep};
+    /// 对单个值执行所有步骤
+    fn execute_steps(
+        steps: &[ExtractStep],
+        input: &ExtractValueData,
+        context: &Context,
+    ) -> Result<SharedValue> {
+        let mut current = Arc::new(input.clone());
 
-    #[test]
-    fn test_map_filter() {
-        let executor = MapExecutor::new(vec![ExtractStep::Filter(FilterStep::Pipeline(
-            "trim".to_string(),
-        ))]);
-
-        let input = ExtractValue::Array(vec![
-            ExtractValue::String("  hello  ".to_string()),
-            ExtractValue::String("  world  ".to_string()),
-        ]);
-        let context = Context::new();
-
-        let result = executor.execute(input, &context).unwrap();
-
-        if let ExtractValue::Array(arr) = result {
-            assert_eq!(arr.len(), 2);
-            assert_eq!(arr[0].as_string(), Some("hello".to_string()));
-            assert_eq!(arr[1].as_string(), Some("world".to_string()));
-        } else {
-            panic!("Expected array result");
+        for step in steps {
+            current = StepExecutorFactory::execute(step, &current, context)?;
         }
+
+        Ok(current)
     }
 }

@@ -1,14 +1,18 @@
 //! # 提取引擎
 //!
-//! 核心提取逻辑
+//! 核心提取逻辑（关键改动：使用引用避免克隆）
 
 use crate::{
     Result,
     context::Context,
     error::RuntimeError,
-    extractor::{ExtractValue, StepExecutorFactory},
+    extractor::{
+        StepExecutorFactory,
+        value::{ExtractValueData, SharedValue},
+    },
 };
 use crawler_schema::extract::{ExtractStep, FieldExtractor};
+use std::sync::Arc;
 
 /// 提取引擎
 ///
@@ -23,25 +27,25 @@ impl ExtractEngine {
         Self {}
     }
 
-    /// 提取字段
+    /// 提取字段（关键改动：仅接收引用）
     ///
     /// 执行 FieldExtractor 定义的提取流程
+    /// 所有回退尝试都使用同一个 input 引用，避免多次克隆
     pub fn extract_field(
-        &self,
         extractor: &FieldExtractor,
-        input: ExtractValue,
+        input: &ExtractValueData,
         context: &Context,
-    ) -> Result<ExtractValue> {
+    ) -> Result<SharedValue> {
         // 执行主步骤链
-        match self.execute_steps(&extractor.steps, input.clone(), context) {
+        match Self::execute_steps(&extractor.steps, input, context) {
             Ok(value) => {
                 // 检查是否为空
                 if value.is_empty() && !extractor.nullable {
-                    // 尝试回退
+                    // 尝试回退（仍然使用 input 的引用，无克隆）
                     if let Some(fallback) = &extractor.fallback {
                         for fallback_steps in fallback {
                             if let Ok(fallback_value) =
-                                self.execute_steps(fallback_steps, input.clone(), context)
+                                Self::execute_steps(fallback_steps, input, context)
                                 && !fallback_value.is_empty()
                             {
                                 return Ok(fallback_value);
@@ -51,7 +55,7 @@ impl ExtractEngine {
 
                     // 使用默认值
                     if let Some(default) = &extractor.default {
-                        return Ok(ExtractValue::from_json(default));
+                        return Ok(Arc::new(ExtractValueData::from_json(default)));
                     }
 
                     // 如果不允许空值，返回错误
@@ -67,7 +71,7 @@ impl ExtractEngine {
                 if let Some(fallback) = &extractor.fallback {
                     for fallback_steps in fallback {
                         if let Ok(fallback_value) =
-                            self.execute_steps(fallback_steps, input.clone(), context)
+                            Self::execute_steps(fallback_steps, input, context)
                             && !fallback_value.is_empty()
                         {
                             return Ok(fallback_value);
@@ -77,7 +81,7 @@ impl ExtractEngine {
 
                 // 使用默认值
                 if let Some(default) = &extractor.default {
-                    return Ok(ExtractValue::from_json(default));
+                    return Ok(Arc::new(ExtractValueData::from_json(default)));
                 }
 
                 Err(e)
@@ -86,17 +90,16 @@ impl ExtractEngine {
     }
 
     /// 执行步骤链
-    fn execute_steps(
-        &self,
+    pub(crate) fn execute_steps(
         steps: &[ExtractStep],
-        input: ExtractValue,
+        input: &ExtractValueData,
         context: &Context,
-    ) -> Result<ExtractValue> {
-        let mut current = input;
+    ) -> Result<SharedValue> {
+        let mut current = Arc::new(input.clone());
 
         for step in steps {
-            let executor = StepExecutorFactory::create(step);
-            current = executor.execute(current, context)?;
+            // 直接调用工厂的静态方法，避免创建执行器实例
+            current = StepExecutorFactory::execute(step, &current, context)?;
         }
 
         Ok(current)

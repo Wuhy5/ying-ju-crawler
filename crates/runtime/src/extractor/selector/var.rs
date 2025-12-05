@@ -4,27 +4,23 @@ use crate::{
     Result,
     context::Context,
     error::RuntimeError,
-    extractor::{ExtractValue, StepExecutor},
+    extractor::value::{ExtractValueData, SharedValue},
 };
+use std::sync::Arc;
 
 /// 变量执行器
-pub struct VarExecutor {
-    var_name: String,
-}
+pub struct VarExecutor;
 
 impl VarExecutor {
-    pub fn new(var_name: String) -> Self {
-        Self { var_name }
-    }
-}
-
-impl StepExecutor for VarExecutor {
-    fn execute(&self, _input: ExtractValue, context: &Context) -> Result<ExtractValue> {
+    /// 从上下文获取变量
+    pub fn execute(
+        var_name: &str,
+        _input: &ExtractValueData,
+        context: &Context,
+    ) -> Result<SharedValue> {
         context
-            .get(&self.var_name)
-            .map(ExtractValue::from_json)
-            .ok_or_else(|| {
-                RuntimeError::Extraction(format!("Variable not found: {}", self.var_name))
-            })
+            .get(var_name)
+            .map(|v| Arc::new(ExtractValueData::from_json(v)))
+            .ok_or_else(|| RuntimeError::Extraction(format!("Variable not found: {}", var_name)))
     }
 }

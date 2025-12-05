@@ -4,9 +4,10 @@ use crate::{
     Result,
     context::Context,
     error::RuntimeError,
-    extractor::{ExtractEngine, ExtractValue},
+    extractor::{ExtractEngine, SharedValue, value::ExtractValueData},
     flow::FlowExecutor,
     http::HttpClient,
+    model::SearchItem,
     template::TemplateRenderer,
 };
 use async_trait::async_trait;
@@ -21,25 +22,6 @@ pub struct SearchRequest {
     pub keyword: String,
     /// 页码
     pub page: u32,
-}
-
-/// 搜索结果项
-#[derive(Debug, Clone)]
-pub struct SearchItem {
-    /// 标题
-    pub title: String,
-    /// 详情页 URL
-    pub url: String,
-    /// 封面图 URL
-    pub cover: Option<String>,
-    /// 简介
-    pub summary: Option<String>,
-    /// 作者
-    pub author: Option<String>,
-    /// 最新章节
-    pub latest: Option<String>,
-    /// 原始数据
-    pub raw: Value,
 }
 
 /// 搜索结果
@@ -90,17 +72,16 @@ impl SearchFlowExecutor {
     fn extract_string(
         &self,
         extractor: &FieldExtractor,
-        input: &ExtractValue,
+        input: &SharedValue,
         context: &Context,
     ) -> Option<String> {
-        self.extract_engine
-            .extract_field(extractor, input.clone(), context)
+        ExtractEngine::extract_field(extractor, input.as_ref(), context)
             .ok()
-            .and_then(|v| v.as_string())
+            .and_then(|v| v.as_str().map(|s| s.to_string()))
     }
 
     /// 从列表项提取搜索结果
-    fn extract_item(&self, item_html: &ExtractValue, context: &Context) -> Result<SearchItem> {
+    fn extract_item(&self, item_html: &SharedValue, context: &Context) -> Result<SearchItem> {
         let fields = &self.flow.fields;
 
         // 提取必需字段
@@ -168,6 +149,9 @@ impl SearchFlowExecutor {
             summary,
             author,
             latest,
+            score: None,
+            status: None,
+            category: None,
             raw: Value::Object(raw),
         })
     }
@@ -205,19 +189,18 @@ impl FlowExecutor for SearchFlowExecutor {
             .map_err(|e| RuntimeError::HttpRequest(format!("Failed to read response: {}", e)))?;
 
         // 3. 提取列表
-        let html_value = ExtractValue::Html(html);
+        let html_value = Arc::new(ExtractValueData::Html(Arc::from(html.into_boxed_str())));
         let list_result =
-            self.extract_engine
-                .extract_field(&self.flow.list, html_value.clone(), context)?;
+            ExtractEngine::extract_field(&self.flow.list, html_value.as_ref(), context)?;
 
         // 4. 遍历列表项，提取字段
         let mut items = Vec::new();
         let mut raw_items = Vec::new();
 
-        match list_result {
-            ExtractValue::Array(arr) => {
-                for item_value in arr {
-                    match self.extract_item(&item_value, context) {
+        match list_result.as_ref() {
+            ExtractValueData::Array(arr) => {
+                for item_value in arr.iter() {
+                    match self.extract_item(item_value, context) {
                         Ok(item) => {
                             raw_items.push(item.raw.clone());
                             items.push(item);
@@ -229,9 +212,9 @@ impl FlowExecutor for SearchFlowExecutor {
                     }
                 }
             }
-            ExtractValue::Html(h) => {
+            ExtractValueData::Html(h) => {
                 // 单个结果
-                let item_value = ExtractValue::Html(h);
+                let item_value = Arc::new(ExtractValueData::Html(Arc::clone(h)));
                 if let Ok(item) = self.extract_item(&item_value, context) {
                     raw_items.push(item.raw.clone());
                     items.push(item);

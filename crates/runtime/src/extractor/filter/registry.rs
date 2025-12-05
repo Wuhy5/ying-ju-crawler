@@ -2,14 +2,14 @@
 //!
 //! 使用工厂模式管理所有过滤器
 
-use crate::{Result, error::RuntimeError, extractor::ExtractValue};
+use crate::{Result, error::RuntimeError, extractor::SharedValue};
 use serde_json::Value;
 use std::{collections::HashMap, sync::Arc};
 
 /// 过滤器 trait
 pub trait Filter: Send + Sync {
     /// 应用过滤器
-    fn apply(&self, input: &ExtractValue, args: &[Value]) -> Result<ExtractValue>;
+    fn apply(&self, input: &SharedValue, args: &[Value]) -> Result<SharedValue>;
 }
 
 /// 过滤器注册表（全局单例）
@@ -43,7 +43,7 @@ impl FilterRegistry {
     /// 应用过滤器
     ///
     /// 接受输入值的所有权，内部使用引用传递给过滤器
-    pub fn apply(&self, name: &str, input: ExtractValue, args: &[Value]) -> Result<ExtractValue> {
+    pub fn apply(&self, name: &str, input: SharedValue, args: &[Value]) -> Result<SharedValue> {
         let filter = self
             .get(name)
             .ok_or_else(|| RuntimeError::Extraction(format!("Filter not found: {}", name)))?;

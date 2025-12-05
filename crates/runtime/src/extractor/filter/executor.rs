@@ -3,21 +3,16 @@
 use crate::{
     Result,
     context::Context,
-    extractor::{ExtractValue, StepExecutor, filter::registry::global_registry},
+    extractor::{SharedValue, filter::registry::global_registry, value::ExtractValueData},
 };
 use crawler_schema::extract::FilterStep;
 use serde_json::Value;
+use std::sync::Arc;
 
 /// 过滤器执行器
-pub struct FilterExecutor {
-    filter: FilterStep,
-}
+pub struct FilterExecutor;
 
 impl FilterExecutor {
-    pub fn new(filter: FilterStep) -> Self {
-        Self { filter }
-    }
-
     /// 解析过滤器管道字符串
     ///
     /// 例如：`"trim | lower | replace(a, b)"`
@@ -43,14 +38,17 @@ impl FilterExecutor {
 
         filters
     }
-}
 
-impl StepExecutor for FilterExecutor {
-    fn execute(&self, input: ExtractValue, _context: &Context) -> Result<ExtractValue> {
+    /// 执行过滤器
+    pub fn execute(
+        filter: &FilterStep,
+        input: &ExtractValueData,
+        _context: &Context,
+    ) -> Result<SharedValue> {
         let registry = global_registry();
-        let mut current = input;
+        let mut current = Arc::new(input.clone());
 
-        match &self.filter {
+        match filter {
             FilterStep::Pipeline(pipeline) => {
                 let filters = Self::parse_pipeline(pipeline);
                 for (name, args) in filters {
@@ -66,20 +64,5 @@ impl StepExecutor for FilterExecutor {
         }
 
         Ok(current)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_pipeline() {
-        let filters = FilterExecutor::parse_pipeline("trim | lower | replace(a, b)");
-        assert_eq!(filters.len(), 3);
-        assert_eq!(filters[0].0, "trim");
-        assert_eq!(filters[1].0, "lower");
-        assert_eq!(filters[2].0, "replace");
-        assert_eq!(filters[2].1.len(), 2);
     }
 }

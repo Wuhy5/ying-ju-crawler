@@ -3,19 +3,22 @@
 use crate::{
     Result,
     error::RuntimeError,
-    extractor::{ExtractValue, filter::Filter},
+    extractor::{SharedValue, filter::Filter, value::ExtractValueData},
 };
 use serde_json::Value;
+use std::sync::Arc;
 
 /// Trim 过滤器
 pub struct TrimFilter;
 
 impl Filter for TrimFilter {
-    fn apply(&self, input: &ExtractValue, _args: &[Value]) -> Result<ExtractValue> {
-        let s = input.as_string().ok_or_else(|| {
+    fn apply(&self, input: &SharedValue, _args: &[Value]) -> Result<SharedValue> {
+        let s = input.as_str().ok_or_else(|| {
             RuntimeError::Extraction("trim filter requires string input".to_string())
         })?;
-        Ok(ExtractValue::String(s.trim().to_string()))
+        Ok(Arc::new(ExtractValueData::String(Arc::from(
+            s.trim().to_string().into_boxed_str(),
+        ))))
     }
 }
 
@@ -23,11 +26,13 @@ impl Filter for TrimFilter {
 pub struct LowerFilter;
 
 impl Filter for LowerFilter {
-    fn apply(&self, input: &ExtractValue, _args: &[Value]) -> Result<ExtractValue> {
-        let s = input.as_string().ok_or_else(|| {
+    fn apply(&self, input: &SharedValue, _args: &[Value]) -> Result<SharedValue> {
+        let s = input.as_str().ok_or_else(|| {
             RuntimeError::Extraction("lower filter requires string input".to_string())
         })?;
-        Ok(ExtractValue::String(s.to_lowercase()))
+        Ok(Arc::new(ExtractValueData::String(Arc::from(
+            s.to_lowercase().into_boxed_str(),
+        ))))
     }
 }
 
@@ -35,11 +40,13 @@ impl Filter for LowerFilter {
 pub struct UpperFilter;
 
 impl Filter for UpperFilter {
-    fn apply(&self, input: &ExtractValue, _args: &[Value]) -> Result<ExtractValue> {
-        let s = input.as_string().ok_or_else(|| {
+    fn apply(&self, input: &SharedValue, _args: &[Value]) -> Result<SharedValue> {
+        let s = input.as_str().ok_or_else(|| {
             RuntimeError::Extraction("upper filter requires string input".to_string())
         })?;
-        Ok(ExtractValue::String(s.to_uppercase()))
+        Ok(Arc::new(ExtractValueData::String(Arc::from(
+            s.to_uppercase().into_boxed_str(),
+        ))))
     }
 }
 
@@ -48,8 +55,8 @@ impl Filter for UpperFilter {
 pub struct ReplaceFilter;
 
 impl Filter for ReplaceFilter {
-    fn apply(&self, input: &ExtractValue, args: &[Value]) -> Result<ExtractValue> {
-        let s = input.as_string().ok_or_else(|| {
+    fn apply(&self, input: &SharedValue, args: &[Value]) -> Result<SharedValue> {
+        let s = input.as_str().ok_or_else(|| {
             RuntimeError::Extraction("replace filter requires string input".to_string())
         })?;
 
@@ -66,7 +73,9 @@ impl Filter for ReplaceFilter {
             RuntimeError::Extraction("replace: 'to' must be a string".to_string())
         })?;
 
-        Ok(ExtractValue::String(s.replace(from, to)))
+        Ok(Arc::new(ExtractValueData::String(Arc::from(
+            s.replace(from, to).into_boxed_str(),
+        ))))
     }
 }
 
@@ -75,8 +84,8 @@ impl Filter for ReplaceFilter {
 pub struct RegexReplaceFilter;
 
 impl Filter for RegexReplaceFilter {
-    fn apply(&self, input: &ExtractValue, args: &[Value]) -> Result<ExtractValue> {
-        let s = input.as_string().ok_or_else(|| {
+    fn apply(&self, input: &SharedValue, args: &[Value]) -> Result<SharedValue> {
+        let s = input.as_str().ok_or_else(|| {
             RuntimeError::Extraction("regex_replace filter requires string input".to_string())
         })?;
 
@@ -96,9 +105,9 @@ impl Filter for RegexReplaceFilter {
         let re = regex::Regex::new(pattern)
             .map_err(|e| RuntimeError::Extraction(format!("Invalid regex pattern: {}", e)))?;
 
-        Ok(ExtractValue::String(
-            re.replace_all(&s, replacement).to_string(),
-        ))
+        Ok(Arc::new(ExtractValueData::String(Arc::from(
+            re.replace_all(s, replacement).to_string().into_boxed_str(),
+        ))))
     }
 }
 
@@ -107,19 +116,23 @@ impl Filter for RegexReplaceFilter {
 pub struct SplitFilter;
 
 impl Filter for SplitFilter {
-    fn apply(&self, input: &ExtractValue, args: &[Value]) -> Result<ExtractValue> {
-        let s = input.as_string().ok_or_else(|| {
+    fn apply(&self, input: &SharedValue, args: &[Value]) -> Result<SharedValue> {
+        let s = input.as_str().ok_or_else(|| {
             RuntimeError::Extraction("split filter requires string input".to_string())
         })?;
 
         let sep = args.first().and_then(|v| v.as_str()).unwrap_or(" ");
 
-        let parts: Vec<ExtractValue> = s
+        let parts: Vec<SharedValue> = s
             .split(sep)
-            .map(|p| ExtractValue::String(p.to_string()))
+            .map(|p| {
+                Arc::new(ExtractValueData::String(Arc::from(
+                    p.to_string().into_boxed_str(),
+                )))
+            })
             .collect();
 
-        Ok(ExtractValue::Array(parts))
+        Ok(Arc::new(ExtractValueData::Array(Arc::new(parts))))
     }
 }
 
@@ -128,16 +141,21 @@ impl Filter for SplitFilter {
 pub struct JoinFilter;
 
 impl Filter for JoinFilter {
-    fn apply(&self, input: &ExtractValue, args: &[Value]) -> Result<ExtractValue> {
-        let arr = input.as_array().ok_or_else(|| {
+    fn apply(&self, input: &SharedValue, args: &[Value]) -> Result<SharedValue> {
+        let arr = input.as_array_slice().ok_or_else(|| {
             RuntimeError::Extraction("join filter requires array input".to_string())
         })?;
 
         let sep = args.first().and_then(|v| v.as_str()).unwrap_or("");
 
-        let strings: Vec<String> = arr.iter().filter_map(|v| v.as_string()).collect();
+        let strings: Vec<String> = arr
+            .iter()
+            .filter_map(|v| v.as_str().map(|s| s.to_string()))
+            .collect();
 
-        Ok(ExtractValue::String(strings.join(sep)))
+        Ok(Arc::new(ExtractValueData::String(Arc::from(
+            strings.join(sep).into_boxed_str(),
+        ))))
     }
 }
 
@@ -146,16 +164,18 @@ impl Filter for JoinFilter {
 pub struct StripHtmlFilter;
 
 impl Filter for StripHtmlFilter {
-    fn apply(&self, input: &ExtractValue, _args: &[Value]) -> Result<ExtractValue> {
-        let s = input.as_string().ok_or_else(|| {
+    fn apply(&self, input: &SharedValue, _args: &[Value]) -> Result<SharedValue> {
+        let s = input.as_str().ok_or_else(|| {
             RuntimeError::Extraction("strip_html filter requires string input".to_string())
         })?;
 
         // 使用正则移除 HTML 标签
         let re = regex::Regex::new(r"<[^>]+>").unwrap();
-        let result = re.replace_all(&s, "").to_string();
+        let result = re.replace_all(s, "").to_string();
 
-        Ok(ExtractValue::String(result))
+        Ok(Arc::new(ExtractValueData::String(Arc::from(
+            result.into_boxed_str(),
+        ))))
     }
 }
 
@@ -164,8 +184,8 @@ impl Filter for StripHtmlFilter {
 pub struct SubstringFilter;
 
 impl Filter for SubstringFilter {
-    fn apply(&self, input: &ExtractValue, args: &[Value]) -> Result<ExtractValue> {
-        let s = input.as_string().ok_or_else(|| {
+    fn apply(&self, input: &SharedValue, args: &[Value]) -> Result<SharedValue> {
+        let s = input.as_str().ok_or_else(|| {
             RuntimeError::Extraction("substring filter requires string input".to_string())
         })?;
 
@@ -179,6 +199,8 @@ impl Filter for SubstringFilter {
             .unwrap_or(chars.len());
         let result: String = chars[start.min(chars.len())..end].iter().collect();
 
-        Ok(ExtractValue::String(result))
+        Ok(Arc::new(ExtractValueData::String(Arc::from(
+            result.into_boxed_str(),
+        ))))
     }
 }
